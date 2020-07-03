@@ -68,7 +68,7 @@ class ManagedException(Exception):
 
 # Class used to open urls for financial data
 class UrlOpener(FancyURLopener):
-    version = 'Mozilla/5.0 (Windows; U; Windows NT 5.1; it; rv:1.8.1.11) Gecko/20071127 Firefox/2.0.0.11'
+    version = 'w3m/0.5.3+git20180125'
 
 
 # Class containing Yahoo Finance ETL Functionality
@@ -87,7 +87,8 @@ class YahooFinanceETL(object):
         'balance': ['balance-sheet', 'balanceSheetHistory', 'balanceSheetHistoryQuarterly', 'balanceSheetStatements'],
         'cash': ['cash-flow', 'cashflowStatementHistory', 'cashflowStatementHistoryQuarterly', 'cashflowStatements'],
         'keystats': ['key-statistics'],
-        'history': ['history']
+        'history': ['history'],
+        'profile': ['profile']
     }
 
     # Interval value translation dictionary
@@ -150,6 +151,9 @@ class YahooFinanceETL(object):
                     re_script = soup.find("script", text=re.compile("root.App.main"))
                     if re_script is not None:
                         script = re_script.text
+                        # bs4 4.9.0 changed so text from scripts is no longer considered text
+                        if not script:
+                            script = re_script.string
                         self._cache[url] = loads(re.search("root.App.main\s+=\s+(\{.*\})", script).group(1))
                         response.close()
                         break
@@ -610,6 +614,14 @@ class YahooFinancials(YahooFinanceETL):
             return self.get_clean_data(self.get_stock_tech_data('defaultKeyStatistics'), 'defaultKeyStatistics')
         else:
             return self.get_stock_tech_data('defaultKeyStatistics')
+
+    # Public Method for the user to get company profile data
+    def get_stock_profile_data(self, reformat=True):
+        if reformat:
+            return self.get_clean_data(self.get_stock_data(statement_type='profile', tech_type='', report_name='assetProfile'), 'earnings')
+        else:
+            return self.get_stock_data(statement_type='profile', tech_type='', report_name='assetProfile')
+
 
     # Public Method for the user to get stock earnings data
     def get_stock_earnings_data(self, reformat=True):
